@@ -1,0 +1,196 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a>glue (v4.1.0)</a>
+</h1>
+<h4>Server composer for hapi.js</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.glue">module glue</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.glue.compose">
+            function <span class="apidocSignatureSpan">glue.</span>compose
+            <span class="apidocSignatureSpan">(manifest)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.glue" id="apidoc.module.glue">module glue</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.glue.compose" id="apidoc.element.glue.compose">
+        function <span class="apidocSignatureSpan">glue.</span>compose
+        <span class="apidocSignatureSpan">(manifest)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">compose = function (manifest) {
+
+    Hoek.assert(arguments.length &lt;= 3, 'Invalid number of arguments');
+
+    const options = arguments.length === 1 || typeof arguments[1] === 'function' ? {} : arguments[1];
+    const callback = typeof arguments[arguments.length - 1] === 'function' ? arguments[arguments.length - 1] : null;
+
+    Joi.assert(options, internals.schema.options, 'Invalid options');
+    Joi.assert(manifest, internals.schema.manifest, 'Invalid manifest');
+
+    // Return Promise if no callback provided
+
+    if (!callback) {
+        return new Promise((resolve, reject) =&gt; {
+
+            exports.compose(manifest, options, (err, server) =&gt; {
+
+                if (err) {
+                    return reject(err);
+                }
+
+                return resolve(server);
+            });
+        });
+    }
+
+    // Create server
+
+    const serverOpts = internals.parseServer(manifest.server || {}, options.relativeTo);
+    const server = new Hapi.Server(serverOpts);
+
+    const steps = [];
+    steps.push((next) =&gt; {
+
+        if (options.preConnections) {
+            options.preConnections(server, next);
+        }
+        else {
+            next();
+        }
+    });
+
+    steps.push((next) =&gt; {
+
+        // Load connections
+
+        if (manifest.connections &amp;&amp; manifest.connections.length &gt; 0) {
+            manifest.connections.forEach((connection) =&gt; {
+
+                server.connection(connection);
+            });
+        }
+        else {
+            server.connection();
+        }
+
+        next();
+    });
+
+    steps.push((next) =&gt; {
+
+        if (options.preRegister) {
+            options.preRegister(server, next);
+        }
+        else {
+            next();
+        }
+    });
+
+    steps.push((next) =&gt; {
+
+        // Load registrations
+
+        if (manifest.registrations) {
+            const registrations = manifest.registrations.map((reg) =&gt; {
+
+                return {
+                    plugin: internals.parsePlugin(reg.plugin, options.relativeTo),
+                    options: reg.options || {}
+                };
+            });
+            Items.serial(registrations, (reg, nextRegister) =&gt; {
+
+                server.register(reg.plugin, reg.options, nextRegister);
+            }, next);
+        }
+        else {
+            next();
+        }
+    });
+
+    Items.serial(steps, (step, nextStep) =&gt; {
+
+        step(nextStep);
+    }, (err) =&gt; {
+
+        if (err) {
+            return Hoek.nextTick(callback)(err);
+        }
+
+        Hoek.nextTick(callback)(null, server);
+    });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
